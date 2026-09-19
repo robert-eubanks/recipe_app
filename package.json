@@ -1,0 +1,21 @@
+{
+  "name": "recipe-app",
+  "version": "1.0.0",
+  "description": "Database-backed recipe management application",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "migrate": "cd backend && node migrate-recipes.js"
+  },
+  "keywords": [
+    "recipes",
+    "database",
+    "react",
+    "node",
+    "express"
+  ],
+  "author": "Robert",
+  "license": "MIT"
+}
