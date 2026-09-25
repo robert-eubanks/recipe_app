@@ -298,9 +298,9 @@ app.get('/api/search', async (req, res) => {
       FROM recipes r
       LEFT JOIN categories c ON r.category_id = c.id
       LEFT JOIN ingredients i ON r.id = i.recipe_id
-      WHERE (r.title LIKE ? OR r.notes LIKE ? OR i.text LIKE ?)
+      WHERE (r.title LIKE ? OR r.notes LIKE ? OR i.text LIKE ? OR r.author LIKE ? OR r.description LIKE ?)
     `;
-    let params = [`%${q}%`, `%${q}%`, `%${q}%`];
+    let params = [`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`];
 
     if (categoryId) {
       sql += ` AND r.category_id = ?`;
