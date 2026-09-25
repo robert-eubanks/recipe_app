@@ -9,6 +9,8 @@ yarn-error.log*
 backend/recipes.db
 backend/recipes.db-shm
 backend/recipes.db-wal
+backend/recipes.db.bak-*
+backend/uploads/
 
 # Frontend
 frontend/build/

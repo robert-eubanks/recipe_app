@@ -1,0 +1,18 @@
+.star-rating {
+  display: inline-flex;
+  gap: 2px;
+  line-height: 1;
+}
+
+.star-rating .star {
+  font-size: 18px;
+  color: #ccc;
+}
+
+.star-rating .star.star-filled {
+  color: #121212;
+}
+
+.star-rating-interactive .star {
+  cursor: pointer;
+}

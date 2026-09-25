@@ -6,7 +6,7 @@
 }
 
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #121212;
   color: white;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -15,11 +15,13 @@
 .app-header h1 {
   margin: 0;
   font-size: 28px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
 }
 
 .app-header p {
   margin: 4px 0 0 0;
-  opacity: 0.9;
+  color: #bbb;
   font-size: 14px;
 }
 
@@ -78,30 +80,30 @@
 }
 
 .btn-primary {
-  background-color: #667eea;
+  background-color: #121212;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #5568d3;
+  background-color: #000;
 }
 
 .btn-secondary {
-  background-color: #e9ecef;
+  background-color: #eee;
   color: #333;
 }
 
 .btn-secondary:hover {
-  background-color: #dee2e6;
+  background-color: #ddd;
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: #8c2f2f;
   color: white;
 }
 
 .btn-danger:hover {
-  background-color: #c82333;
+  background-color: #742525;
 }
 
 .btn-small {
@@ -139,8 +141,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #9c4a3c;
+  box-shadow: 0 0 0 3px rgba(156, 74, 60, 0.1);
 }
 
 .form-group textarea {
@@ -184,8 +186,9 @@
 }
 
 .recipe-item.active {
-  background-color: #e7f3ff;
-  border-color: #667eea;
+  background-color: #f7f0ee;
+  border-color: #eee;
+  border-left: 3px solid #9c4a3c;
 }
 
 .recipe-item-title {
@@ -218,6 +221,13 @@
 }
 
 /* Recipe Detail */
+.recipe-detail-wrapper {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 900px;
+}
+
 .recipe-detail {
   background: white;
   border-radius: 8px;

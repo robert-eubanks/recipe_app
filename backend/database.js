@@ -47,6 +47,32 @@ class Database {
         )
       `);
 
+      // New optional recipe fields (idempotent - safe to run against an existing populated DB)
+      const newRecipeColumns = [
+        'subtitle TEXT',
+        'author TEXT',
+        'description TEXT',
+        'image_path TEXT',
+        'image_credit TEXT',
+        'rating INTEGER',
+        'nutrition_calories TEXT',
+        'nutrition_protein TEXT',
+        'nutrition_fat TEXT',
+        'nutrition_carbs TEXT',
+        'nutrition_fiber TEXT',
+        'nutrition_sugar TEXT',
+        'nutrition_sodium TEXT',
+        'nutrition_cholesterol TEXT',
+        'layout TEXT'
+      ];
+      for (const columnDef of newRecipeColumns) {
+        this.db.run(`ALTER TABLE recipes ADD COLUMN ${columnDef}`, (err) => {
+          if (err && !/duplicate column name/.test(err.message)) {
+            console.error(`Error adding column (${columnDef}):`, err);
+          }
+        });
+      }
+
       // Ingredients table
       this.db.run(`
         CREATE TABLE IF NOT EXISTS ingredients (

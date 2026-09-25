@@ -78,9 +78,19 @@ function App() {
     setShowForm(false);
   };
 
-  const handleAddRecipe = async (recipeData) => {
+  const uploadPhoto = async (recipeId, photoFile, imageCredit) => {
+    const fd = new FormData();
+    fd.append('photo', photoFile);
+    if (imageCredit) fd.append('image_credit', imageCredit);
+    await axios.post(`/api/recipes/${recipeId}/photo`, fd);
+  };
+
+  const handleAddRecipe = async (recipeData, photoFile) => {
     try {
-      await axios.post('/api/recipes', recipeData);
+      const res = await axios.post('/api/recipes', recipeData);
+      if (photoFile) {
+        await uploadPhoto(res.data.id, photoFile, recipeData.image_credit);
+      }
       setShowForm(false);
       loadRecipes();
       setError(null);
@@ -90,9 +100,12 @@ function App() {
     }
   };
 
-  const handleUpdateRecipe = async (recipeData) => {
+  const handleUpdateRecipe = async (recipeData, photoFile) => {
     try {
       await axios.put(`/api/recipes/${selectedRecipe.id}`, recipeData);
+      if (photoFile) {
+        await uploadPhoto(selectedRecipe.id, photoFile, recipeData.image_credit);
+      }
       setSelectedRecipe(null);
       loadRecipes();
       setError(null);

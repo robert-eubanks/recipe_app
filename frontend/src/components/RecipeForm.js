@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import StarRating from './StarRating';
 
 function RecipeForm({ categories, onSubmit, onCancel }) {
+  const [photoFile, setPhotoFile] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     category_id: '',
@@ -11,6 +13,19 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
     notes: '',
     url: '',
     source_file: '',
+    subtitle: '',
+    author: '',
+    description: '',
+    image_credit: '',
+    rating: 0,
+    nutrition_calories: '',
+    nutrition_protein: '',
+    nutrition_fat: '',
+    nutrition_carbs: '',
+    nutrition_fiber: '',
+    nutrition_sugar: '',
+    nutrition_sodium: '',
+    nutrition_cholesterol: '',
     ingredients: [''],
     instructions: [''],
   });
@@ -52,7 +67,7 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
       ingredients: formData.ingredients.filter(i => i.trim()),
       instructions: formData.instructions.filter(i => i.trim()),
     };
-    onSubmit(cleanData);
+    onSubmit(cleanData, photoFile);
   };
 
   return (
@@ -68,6 +83,38 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
           onChange={handleInputChange}
           required
           placeholder="Recipe name"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Subtitle</label>
+        <input
+          type="text"
+          name="subtitle"
+          value={formData.subtitle}
+          onChange={handleInputChange}
+          placeholder="A short subtitle"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Author</label>
+        <input
+          type="text"
+          name="author"
+          value={formData.author}
+          onChange={handleInputChange}
+          placeholder="Recipe author"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Description</label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          placeholder="A short description of the recipe"
         />
       </div>
 
@@ -205,6 +252,78 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
         >
           + Add Step
         </button>
+      </div>
+
+      <div className="form-group">
+        <label>Photo</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setPhotoFile(e.target.files[0] || null)}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Photo Credit</label>
+        <input
+          type="text"
+          name="image_credit"
+          value={formData.image_credit}
+          onChange={handleInputChange}
+          placeholder="Photo credit"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Rating</label>
+        <StarRating
+          rating={formData.rating}
+          onChange={(n) => setFormData(prev => ({ ...prev, rating: n }))}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Nutrition (optional)</label>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Calories</label>
+            <input type="text" name="nutrition_calories" value={formData.nutrition_calories} onChange={handleInputChange} />
+          </div>
+          <div className="form-group">
+            <label>Protein</label>
+            <input type="text" name="nutrition_protein" value={formData.nutrition_protein} onChange={handleInputChange} />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Fat</label>
+            <input type="text" name="nutrition_fat" value={formData.nutrition_fat} onChange={handleInputChange} />
+          </div>
+          <div className="form-group">
+            <label>Carbohydrates</label>
+            <input type="text" name="nutrition_carbs" value={formData.nutrition_carbs} onChange={handleInputChange} />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Fiber</label>
+            <input type="text" name="nutrition_fiber" value={formData.nutrition_fiber} onChange={handleInputChange} />
+          </div>
+          <div className="form-group">
+            <label>Sugar</label>
+            <input type="text" name="nutrition_sugar" value={formData.nutrition_sugar} onChange={handleInputChange} />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Sodium</label>
+            <input type="text" name="nutrition_sodium" value={formData.nutrition_sodium} onChange={handleInputChange} />
+          </div>
+          <div className="form-group">
+            <label>Cholesterol</label>
+            <input type="text" name="nutrition_cholesterol" value={formData.nutrition_cholesterol} onChange={handleInputChange} />
+          </div>
+        </div>
       </div>
 
       <div className="form-group">

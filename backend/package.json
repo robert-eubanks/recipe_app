@@ -7,16 +7,24 @@
     "start": "node server.js",
     "dev": "NODE_ENV=development node server.js"
   },
-  "keywords": ["recipes", "api", "express"],
+  "keywords": [
+    "recipes",
+    "api",
+    "express"
+  ],
   "author": "Robert",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "body-parser": "^1.20.2"
+    "express": "^4.18.2",
+    "multer": "^2.4.0",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
+  },
+  "allowScripts": {
+    "sqlite3@5.1.7": true
   }
 }

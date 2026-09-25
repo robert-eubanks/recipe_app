@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import StarRating from './StarRating';
+import { getLayoutComponent } from '../layouts';
 
 function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [formData, setFormData] = useState({
     title: recipe.title,
     category_id: recipe.category_id,
@@ -11,6 +15,19 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
     total_time: recipe.total_time || '',
     notes: recipe.notes || '',
     url: recipe.url || '',
+    subtitle: recipe.subtitle || '',
+    author: recipe.author || '',
+    description: recipe.description || '',
+    image_credit: recipe.image_credit || '',
+    rating: recipe.rating || 0,
+    nutrition_calories: recipe.nutrition_calories || '',
+    nutrition_protein: recipe.nutrition_protein || '',
+    nutrition_fat: recipe.nutrition_fat || '',
+    nutrition_carbs: recipe.nutrition_carbs || '',
+    nutrition_fiber: recipe.nutrition_fiber || '',
+    nutrition_sugar: recipe.nutrition_sugar || '',
+    nutrition_sodium: recipe.nutrition_sodium || '',
+    nutrition_cholesterol: recipe.nutrition_cholesterol || '',
     ingredients: recipe.ingredients.map(i => i.text),
     instructions: recipe.instructions.map(i => i.text),
   });
@@ -46,7 +63,8 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onUpdate(formData);
+    const submitData = removePhoto ? { ...formData, remove_photo: true } : formData;
+    await onUpdate(submitData, photoFile);
     setIsEditing(false);
   };
 
@@ -63,6 +81,38 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
             value={formData.title}
             onChange={handleInputChange}
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Subtitle</label>
+          <input
+            type="text"
+            name="subtitle"
+            value={formData.subtitle}
+            onChange={handleInputChange}
+            placeholder="A short subtitle"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Author</label>
+          <input
+            type="text"
+            name="author"
+            value={formData.author}
+            onChange={handleInputChange}
+            placeholder="Recipe author"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="A short description of the recipe"
           />
         </div>
 
@@ -188,6 +238,92 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
         </div>
 
         <div className="form-group">
+          <label>Photo</label>
+          {recipe.image_path && !removePhoto && (
+            <div style={{ marginBottom: '8px' }}>
+              <img src={recipe.image_path} alt={recipe.title} style={{ maxWidth: '200px', display: 'block', marginBottom: '4px' }} />
+              <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input
+                  type="checkbox"
+                  checked={removePhoto}
+                  onChange={(e) => setRemovePhoto(e.target.checked)}
+                  style={{ width: 'auto' }}
+                />
+                Remove photo
+              </label>
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPhotoFile(e.target.files[0] || null)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Photo Credit</label>
+          <input
+            type="text"
+            name="image_credit"
+            value={formData.image_credit}
+            onChange={handleInputChange}
+            placeholder="Photo credit"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Rating</label>
+          <StarRating
+            rating={formData.rating}
+            onChange={(n) => setFormData(prev => ({ ...prev, rating: n }))}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Nutrition (optional)</label>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Calories</label>
+              <input type="text" name="nutrition_calories" value={formData.nutrition_calories} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Protein</label>
+              <input type="text" name="nutrition_protein" value={formData.nutrition_protein} onChange={handleInputChange} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Fat</label>
+              <input type="text" name="nutrition_fat" value={formData.nutrition_fat} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Carbohydrates</label>
+              <input type="text" name="nutrition_carbs" value={formData.nutrition_carbs} onChange={handleInputChange} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Fiber</label>
+              <input type="text" name="nutrition_fiber" value={formData.nutrition_fiber} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Sugar</label>
+              <input type="text" name="nutrition_sugar" value={formData.nutrition_sugar} onChange={handleInputChange} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Sodium</label>
+              <input type="text" name="nutrition_sodium" value={formData.nutrition_sodium} onChange={handleInputChange} />
+            </div>
+            <div className="form-group">
+              <label>Cholesterol</label>
+              <input type="text" name="nutrition_cholesterol" value={formData.nutrition_cholesterol} onChange={handleInputChange} />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-group">
           <label>Notes</label>
           <textarea
             name="notes"
@@ -216,76 +352,11 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
     );
   }
 
+  const Layout = getLayoutComponent(recipe);
+
   return (
-    <div className="recipe-detail">
-      <h2>{recipe.title}</h2>
-      {recipe.category_name && <p style={{ color: '#999', marginTop: '4px' }}>{recipe.category_name}</p>}
-
-      <div className="recipe-meta">
-        {recipe.servings && (
-          <div className="recipe-meta-item">
-            <div className="recipe-meta-label">Servings</div>
-            <div className="recipe-meta-value">{recipe.servings}</div>
-          </div>
-        )}
-        {recipe.prep_time && (
-          <div className="recipe-meta-item">
-            <div className="recipe-meta-label">Prep Time</div>
-            <div className="recipe-meta-value">{recipe.prep_time}</div>
-          </div>
-        )}
-        {recipe.cook_time && (
-          <div className="recipe-meta-item">
-            <div className="recipe-meta-label">Cook Time</div>
-            <div className="recipe-meta-value">{recipe.cook_time}</div>
-          </div>
-        )}
-        {recipe.total_time && (
-          <div className="recipe-meta-item">
-            <div className="recipe-meta-label">Total Time</div>
-            <div className="recipe-meta-value">{recipe.total_time}</div>
-          </div>
-        )}
-      </div>
-
-      {recipe.ingredients.length > 0 && (
-        <div className="recipe-section">
-          <h3>Ingredients</h3>
-          <ul className="recipe-list-items">
-            {recipe.ingredients.map((ingredient) => (
-              <li key={ingredient.id}>{ingredient.text}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {recipe.instructions.length > 0 && (
-        <div className="recipe-section">
-          <h3>Instructions</h3>
-          <ol className="recipe-list-items">
-            {recipe.instructions.map((instruction) => (
-              <li key={instruction.id}>{instruction.text}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {recipe.notes && (
-        <div className="recipe-section">
-          <h3>Notes</h3>
-          <p style={{ lineHeight: '1.6', color: '#555' }}>{recipe.notes}</p>
-        </div>
-      )}
-
-      {recipe.url && (
-        <div className="recipe-section">
-          <h3>Source</h3>
-          <a href={recipe.url} target="_blank" rel="noopener noreferrer" style={{ color: '#667eea' }}>
-            {recipe.url}
-          </a>
-        </div>
-      )}
-
+    <div className="recipe-detail-wrapper">
+      <Layout recipe={recipe} />
       <div className="recipe-actions">
         <button className="btn btn-primary" onClick={() => setIsEditing(true)}>Edit</button>
         <button className="btn btn-danger" onClick={() => onDelete(recipe.id)}>Delete</button>
