@@ -43,6 +43,9 @@
 
 .sidebar-actions {
   margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .main-content {
@@ -211,6 +214,22 @@
   border-radius: 4px;
   margin-bottom: 16px;
   font-size: 14px;
+}
+
+.import-warnings {
+  padding: 12px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.import-warnings ul,
+.error-message ul {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
 }
 
 .loading {

@@ -5,6 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const db = require('./database');
+const {
+  fetchAndParseRecipeUrl,
+  extractUrlFromWebloc,
+  parsePdfText,
+  isPrivateOrLocalHost,
+} = require('./import-helpers');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -21,6 +27,13 @@ const upload = multer({
   fileFilter: (req, file, cb) => cb(null, file.mimetype.startsWith('image/'))
 });
 
+// For import files (.pdf/.webloc) — kept in memory only, never written to
+// UPLOADS_DIR, which stays reserved for actual recipe photos.
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }
+});
+
 function deleteUploadedFile(imagePath) {
   if (!imagePath) return;
   fs.unlink(path.join(__dirname, imagePath.replace(/^\//, '')), (err) => {
@@ -28,8 +41,22 @@ function deleteUploadedFile(imagePath) {
   });
 }
 
+// Shared by the multipart photo upload and the photo-from-url import path:
+// both get bytes onto disk their own way, then converge here to delete the
+// old photo (if any) and update the DB row.
+async function applyRecipePhoto(recipeId, image_path, imageCredit) {
+  const existing = await db.get('SELECT image_path FROM recipes WHERE id = ?', [recipeId]);
+  if (!existing) return null;
+  deleteUploadedFile(existing.image_path);
+  await db.run(
+    'UPDATE recipes SET image_path = ?, image_credit = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [image_path, imageCredit || null, recipeId]
+  );
+  return { image_path, image_credit: imageCredit || null };
+}
+
 function validateRating(rating) {
-  if (rating === undefined || rating === null || rating === '') return { value: null, error: null };
+  if (rating === undefined || rating === null || rating === '' || rating === 0 || rating === '0') return { value: null, error: null };
   const r = parseInt(rating, 10);
   if (!Number.isInteger(r) || r < 1 || r > 5) {
     return { value: null, error: 'rating must be an integer 1-5' };
@@ -231,20 +258,37 @@ app.put('/api/recipes/:id', async (req, res) => {
 // Upload/replace a recipe's photo
 app.post('/api/recipes/:id/photo', upload.single('photo'), async (req, res) => {
   try {
-    const existing = await db.get('SELECT image_path FROM recipes WHERE id = ?', [req.params.id]);
-    if (!existing) return res.status(404).json({ error: 'Recipe not found' });
     if (!req.file) return res.status(400).json({ error: 'No photo file provided' });
+    const result = await applyRecipePhoto(req.params.id, `/uploads/${req.file.filename}`, req.body.image_credit);
+    if (!result) return res.status(404).json({ error: 'Recipe not found' });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-    deleteUploadedFile(existing.image_path);
+// Attach a photo to a recipe by fetching it from a URL (used by imports)
+app.post('/api/recipes/:id/photo-from-url', async (req, res) => {
+  try {
+    const { url, credit } = req.body;
+    if (!url) return res.status(400).json({ error: 'No image URL provided' });
+    if (isPrivateOrLocalHost(url)) return res.status(400).json({ error: 'That URL is not allowed' });
 
-    const image_path = `/uploads/${req.file.filename}`;
-    const image_credit = req.body.image_credit || null;
-    await db.run(
-      'UPDATE recipes SET image_path = ?, image_credit = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [image_path, image_credit, req.params.id]
-    );
+    const existing = await db.get('SELECT id FROM recipes WHERE id = ?', [req.params.id]);
+    if (!existing) return res.status(404).json({ error: 'Recipe not found' });
 
-    res.json({ image_path, image_credit });
+    const imgRes = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!imgRes.ok) return res.status(400).json({ error: `Couldn't download image: HTTP ${imgRes.status}` });
+    const contentType = (imgRes.headers.get('content-type') || '').split(';')[0];
+    if (!contentType.startsWith('image/')) return res.status(400).json({ error: 'URL did not return an image' });
+
+    const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' }[contentType] || '.jpg';
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    const filename = `${req.params.id}-${Date.now()}${ext}`;
+    fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
+
+    const result = await applyRecipePhoto(req.params.id, `/uploads/${filename}`, credit);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -282,6 +326,56 @@ app.post('/api/categories', async (req, res) => {
     res.status(201).json({ id: result.lastID, name });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== IMPORT ====================
+
+// Parse a recipe from a URL (schema.org/Recipe JSON-LD). Does not write to
+// the DB — returns a draft for the frontend to review before saving via the
+// normal POST /api/recipes.
+app.post('/api/import/url', async (req, res) => {
+  try {
+    const categories = await db.all('SELECT * FROM categories');
+    const result = await fetchAndParseRecipeUrl(req.body.url, categories);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ ok: false, recipe: {}, image: null, warnings: [], errors: [error.message] });
+  }
+});
+
+// Parse a recipe from an uploaded .pdf or .webloc file. Same draft contract
+// as /api/import/url. The uploaded file itself is never persisted to disk.
+app.post('/api/import/file', importUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.json({ ok: false, recipe: {}, image: null, warnings: [], errors: ['No file provided'] });
+    }
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const categories = await db.all('SELECT * FROM categories');
+
+    if (ext === '.webloc') {
+      const url = extractUrlFromWebloc(req.file.buffer.toString('utf8'));
+      if (!url) {
+        return res.json({ ok: false, recipe: {}, image: null, warnings: [], errors: ["Couldn't find a URL inside this .webloc file"] });
+      }
+      const result = await fetchAndParseRecipeUrl(url, categories);
+      return res.json(result);
+    }
+
+    if (ext === '.pdf') {
+      const { PDFParse } = require('pdf-parse');
+      const parser = new PDFParse({ data: req.file.buffer });
+      const data = await parser.getText();
+      await parser.destroy();
+      const { recipe, warnings, errors } = parsePdfText(data.text, req.file.originalname, categories);
+      const hasUsableData = (recipe.ingredients && recipe.ingredients.length) || (recipe.instructions && recipe.instructions.length);
+      return res.json({ ok: !!hasUsableData && errors.length === 0, recipe, image: null, warnings, errors });
+    }
+
+    return res.json({ ok: false, recipe: {}, image: null, warnings: [], errors: ['Unsupported file type — please upload a .pdf or .webloc file'] });
+  } catch (error) {
+    res.status(500).json({ ok: false, recipe: {}, image: null, warnings: [], errors: [error.message] });
   }
 });
 
@@ -346,5 +440,7 @@ app.listen(PORT, () => {
   console.log(`  DELETE /api/recipes/:id      - Delete recipe`);
   console.log(`  GET    /api/categories       - Get all categories`);
   console.log(`  POST   /api/categories       - Create category`);
-  console.log(`  GET    /api/search?q=term    - Search recipes\n`);
+  console.log(`  GET    /api/search?q=term    - Search recipes`);
+  console.log(`  POST   /api/import/url       - Parse a recipe from a URL`);
+  console.log(`  POST   /api/import/file      - Parse a recipe from a .pdf/.webloc file\n`);
 });

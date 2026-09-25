@@ -4,6 +4,7 @@ import './App.css';
 import RecipeList from './components/RecipeList';
 import RecipeDetail from './components/RecipeDetail';
 import RecipeForm from './components/RecipeForm';
+import ImportRecipe from './components/ImportRecipe';
 import SearchBar from './components/SearchBar';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -76,6 +78,7 @@ function App() {
   const handleSelectRecipe = (recipe) => {
     setSelectedRecipe(recipe);
     setShowForm(false);
+    setShowImport(false);
   };
 
   const uploadPhoto = async (recipeId, photoFile, imageCredit) => {
@@ -96,6 +99,26 @@ function App() {
       setError(null);
     } catch (err) {
       setError('Failed to add recipe');
+      console.error(err);
+    }
+  };
+
+  const handleImportedRecipe = async (recipeData, photoFile, sourceImage) => {
+    try {
+      const res = await axios.post('/api/recipes', recipeData);
+      if (photoFile) {
+        await uploadPhoto(res.data.id, photoFile, recipeData.image_credit);
+      } else if (sourceImage?.url) {
+        await axios.post(`/api/recipes/${res.data.id}/photo-from-url`, {
+          url: sourceImage.url,
+          credit: recipeData.image_credit || sourceImage.credit,
+        });
+      }
+      setShowImport(false);
+      loadRecipes();
+      setError(null);
+    } catch (err) {
+      setError('Failed to save imported recipe');
       console.error(err);
     }
   };
@@ -150,9 +173,15 @@ function App() {
           <div className="sidebar-actions">
             <button
               className="btn btn-primary"
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => { setShowForm(!showForm); setShowImport(false); }}
             >
               {showForm ? '✕ Close' : '+ Add Recipe'}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => { setShowImport(!showImport); setShowForm(false); }}
+            >
+              {showImport ? '✕ Close' : '⬇ Import Recipe'}
             </button>
           </div>
 
@@ -160,7 +189,7 @@ function App() {
 
           {loading && <div className="loading">Loading...</div>}
 
-          {!showForm && (
+          {!showForm && !showImport && (
             <RecipeList
               recipes={displayRecipes}
               selectedRecipeId={selectedRecipe?.id}
@@ -170,7 +199,14 @@ function App() {
         </aside>
 
         <main className="main-content">
-          {showForm ? (
+          {showImport ? (
+            <ImportRecipe
+              categories={categories}
+              onSubmit={handleImportedRecipe}
+              onCancel={() => setShowImport(false)}
+              onStartManualEntry={() => { setShowImport(false); setShowForm(true); }}
+            />
+          ) : showForm ? (
             <RecipeForm
               categories={categories}
               onSubmit={handleAddRecipe}
