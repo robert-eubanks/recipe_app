@@ -331,6 +331,18 @@ app.post('/api/categories', async (req, res) => {
 
 // ==================== IMPORT ====================
 
+// If the draft's recipe has a source URL that's already in the DB, flag it
+// as a warning rather than blocking — the user decides whether to proceed.
+async function flagDuplicateUrl(result) {
+  const url = result?.recipe?.url;
+  if (!url) return result;
+  const existing = await db.get('SELECT id, title FROM recipes WHERE url = ?', [url]);
+  if (existing) {
+    result.warnings.push(`A recipe with this URL already exists: "${existing.title}" (id ${existing.id})`);
+  }
+  return result;
+}
+
 // Parse a recipe from a URL (schema.org/Recipe JSON-LD). Does not write to
 // the DB — returns a draft for the frontend to review before saving via the
 // normal POST /api/recipes.
@@ -338,7 +350,7 @@ app.post('/api/import/url', async (req, res) => {
   try {
     const categories = await db.all('SELECT * FROM categories');
     const result = await fetchAndParseRecipeUrl(req.body.url, categories);
-    res.json(result);
+    res.json(await flagDuplicateUrl(result));
   } catch (error) {
     res.status(500).json({ ok: false, recipe: {}, image: null, warnings: [], errors: [error.message] });
   }
@@ -360,7 +372,7 @@ app.post('/api/import/file', importUpload.single('file'), async (req, res) => {
         return res.json({ ok: false, recipe: {}, image: null, warnings: [], errors: ["Couldn't find a URL inside this .webloc file"] });
       }
       const result = await fetchAndParseRecipeUrl(url, categories);
-      return res.json(result);
+      return res.json(await flagDuplicateUrl(result));
     }
 
     if (ext === '.pdf') {
@@ -370,7 +382,8 @@ app.post('/api/import/file', importUpload.single('file'), async (req, res) => {
       await parser.destroy();
       const { recipe, warnings, errors } = parsePdfText(data.text, req.file.originalname, categories);
       const hasUsableData = (recipe.ingredients && recipe.ingredients.length) || (recipe.instructions && recipe.instructions.length);
-      return res.json({ ok: !!hasUsableData && errors.length === 0, recipe, image: null, warnings, errors });
+      const result = { ok: !!hasUsableData && errors.length === 0, recipe, image: null, warnings, errors };
+      return res.json(await flagDuplicateUrl(result));
     }
 
     return res.json({ ok: false, recipe: {}, image: null, warnings: [], errors: ['Unsupported file type — please upload a .pdf or .webloc file'] });
