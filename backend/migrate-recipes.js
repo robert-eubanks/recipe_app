@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
+const { cleanTitle, inferCategory } = require('./recipe-cleanup');
 
 async function migrateRecipes() {
   const jsonFilePath = process.argv[2];
@@ -29,7 +30,10 @@ async function migrateRecipes() {
 
     const fileContent = fs.readFileSync(fullPath, 'utf-8');
     const data = JSON.parse(fileContent);
-    const recipes = data.recipes || [];
+    const recipes = (data.recipes || []).map((recipe) => {
+      const title = cleanTitle(recipe.title, recipe.source_file);
+      return { ...recipe, title, category: recipe.category || inferCategory(title, recipe.source_file) };
+    });
 
     console.log(`Found ${recipes.length} recipes to migrate...\n`);
 
