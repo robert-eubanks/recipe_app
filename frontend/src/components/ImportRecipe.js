@@ -1,44 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import RecipeFormFields from './RecipeFormFields';
-
-const DEFAULT_FORM_DATA = {
-  title: '',
-  category_id: '',
-  servings: '',
-  prep_time: '',
-  cook_time: '',
-  total_time: '',
-  notes: '',
-  url: '',
-  source_file: '',
-  subtitle: '',
-  author: '',
-  description: '',
-  image_credit: '',
-  rating: 0,
-  nutrition_calories: '',
-  nutrition_protein: '',
-  nutrition_fat: '',
-  nutrition_carbs: '',
-  nutrition_fiber: '',
-  nutrition_sugar: '',
-  nutrition_sodium: '',
-  nutrition_cholesterol: '',
-  ingredients: [''],
-  instructions: [''],
-};
-
-function buildFormData(recipe) {
-  return {
-    ...DEFAULT_FORM_DATA,
-    ...recipe,
-    category_id: recipe.category_id ?? '',
-    rating: recipe.rating || 0,
-    ingredients: recipe.ingredients && recipe.ingredients.length ? recipe.ingredients : [''],
-    instructions: recipe.instructions && recipe.instructions.length ? recipe.instructions : [''],
-  };
-}
+import { useRecipeFormState, buildRecipeFormData } from '../hooks/useRecipeFormState';
 
 function hasUsableContent(recipe) {
   return !!(recipe && (recipe.title || (recipe.ingredients && recipe.ingredients.length) || (recipe.instructions && recipe.instructions.length)));
@@ -49,14 +12,23 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
   const [urlInput, setUrlInput] = useState('');
   const [fileInput, setFileInput] = useState(null);
   const [importResult, setImportResult] = useState(null);
-  const [formData, setFormData] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const {
+    formData,
+    setFormData,
+    handleInputChange,
+    handleArrayChange,
+    handleAddArrayItem,
+    handleRemoveArrayItem,
+    handleRatingChange,
+    cleanFormData,
+  } = useRecipeFormState();
 
   const handleImportResponse = (result) => {
     setImportResult(result);
     if (hasUsableContent(result.recipe)) {
-      setFormData(buildFormData(result.recipe));
+      setFormData(buildRecipeFormData(result.recipe));
       setMode('review');
     } else {
       setMode('failed');
@@ -93,37 +65,9 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleArrayChange = (index, arrayName, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [arrayName]: prev[arrayName].map((item, i) => (i === index ? value : item)),
-    }));
-  };
-
-  const handleAddArrayItem = (arrayName) => {
-    setFormData((prev) => ({ ...prev, [arrayName]: [...prev[arrayName], ''] }));
-  };
-
-  const handleRemoveArrayItem = (index, arrayName) => {
-    setFormData((prev) => ({
-      ...prev,
-      [arrayName]: prev[arrayName].filter((_, i) => i !== index),
-    }));
-  };
-
   const handleSave = (e) => {
     e.preventDefault();
-    const cleanData = {
-      ...formData,
-      ingredients: formData.ingredients.filter((i) => i.trim()),
-      instructions: formData.instructions.filter((i) => i.trim()),
-    };
-    onSubmit(cleanData, photoFile, importResult.image);
+    onSubmit(cleanFormData(), photoFile, importResult.image);
   };
 
   const renderFeedback = () => (
@@ -168,7 +112,7 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
           onArrayChange={handleArrayChange}
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
-          onRatingChange={(n) => setFormData((prev) => ({ ...prev, rating: n }))}
+          onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}
           showSourceFile
           existingPhoto={importResult.image ? { path: importResult.image.url, title: formData.title } : null}

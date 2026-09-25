@@ -1,69 +1,30 @@
 import React, { useState } from 'react';
 import RecipeFormFields from './RecipeFormFields';
 import { getLayoutComponent } from '../layouts';
+import { useRecipeFormState } from '../hooks/useRecipeFormState';
 
 function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [removePhoto, setRemovePhoto] = useState(false);
-  const [formData, setFormData] = useState({
-    title: recipe.title,
-    category_id: recipe.category_id,
-    servings: recipe.servings || '',
-    prep_time: recipe.prep_time || '',
-    cook_time: recipe.cook_time || '',
-    total_time: recipe.total_time || '',
-    notes: recipe.notes || '',
-    url: recipe.url || '',
-    subtitle: recipe.subtitle || '',
-    author: recipe.author || '',
-    description: recipe.description || '',
-    image_credit: recipe.image_credit || '',
-    rating: recipe.rating || 0,
-    nutrition_calories: recipe.nutrition_calories || '',
-    nutrition_protein: recipe.nutrition_protein || '',
-    nutrition_fat: recipe.nutrition_fat || '',
-    nutrition_carbs: recipe.nutrition_carbs || '',
-    nutrition_fiber: recipe.nutrition_fiber || '',
-    nutrition_sugar: recipe.nutrition_sugar || '',
-    nutrition_sodium: recipe.nutrition_sodium || '',
-    nutrition_cholesterol: recipe.nutrition_cholesterol || '',
+  const {
+    formData,
+    handleInputChange,
+    handleArrayChange,
+    handleAddArrayItem,
+    handleRemoveArrayItem,
+    handleRatingChange,
+    cleanFormData,
+  } = useRecipeFormState({
+    ...recipe,
     ingredients: recipe.ingredients.map(i => i.text),
     instructions: recipe.instructions.map(i => i.text),
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleArrayChange = (index, arrayName, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [arrayName]: prev[arrayName].map((item, i) => i === index ? value : item)
-    }));
-  };
-
-  const handleAddArrayItem = (arrayName) => {
-    setFormData(prev => ({
-      ...prev,
-      [arrayName]: [...prev[arrayName], '']
-    }));
-  };
-
-  const handleRemoveArrayItem = (index, arrayName) => {
-    setFormData(prev => ({
-      ...prev,
-      [arrayName]: prev[arrayName].filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitData = removePhoto ? { ...formData, remove_photo: true } : formData;
+    const cleanData = cleanFormData();
+    const submitData = removePhoto ? { ...cleanData, remove_photo: true } : cleanData;
     await onUpdate(submitData, photoFile);
     setIsEditing(false);
   };
@@ -91,7 +52,7 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
           onArrayChange={handleArrayChange}
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
-          onRatingChange={(n) => setFormData(prev => ({ ...prev, rating: n }))}
+          onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}
           existingPhoto={recipe.image_path ? { path: recipe.image_path, title: recipe.title } : null}
           removePhoto={removePhoto}
