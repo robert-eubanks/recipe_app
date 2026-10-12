@@ -10,6 +10,8 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
+    handleSetArray,
+    handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
   } = useRecipeFormState();
@@ -42,6 +44,8 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
         onArrayChange={handleArrayChange}
         onAddArrayItem={handleAddArrayItem}
         onRemoveArrayItem={handleRemoveArrayItem}
+        onSetArray={handleSetArray}
+        onApplyNutrition={handleApplyNutrition}
         onRatingChange={handleRatingChange}
         onPhotoFileChange={setPhotoFile}
         showSourceFile

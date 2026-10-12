@@ -1,16 +1,8 @@
 import React from 'react';
 import StarRating from './StarRating';
-
-const NUTRITION_FIELDS = [
-  ['nutrition_calories', 'Calories'],
-  ['nutrition_protein', 'Protein'],
-  ['nutrition_fat', 'Fat'],
-  ['nutrition_carbs', 'Carbohydrates'],
-  ['nutrition_fiber', 'Fiber'],
-  ['nutrition_sugar', 'Sugar'],
-  ['nutrition_sodium', 'Sodium'],
-  ['nutrition_cholesterol', 'Cholesterol'],
-];
+import ListFieldEditor from './ListFieldEditor';
+import NutritionFieldEditor from './NutritionFieldEditor';
+import { parseIngredients, parseInstructions } from '../utils/parseList';
 
 function RecipeFormFields({
   formData,
@@ -19,6 +11,8 @@ function RecipeFormFields({
   onArrayChange,
   onAddArrayItem,
   onRemoveArrayItem,
+  onSetArray,
+  onApplyNutrition,
   onRatingChange,
   onPhotoFileChange,
   showSourceFile = false,
@@ -135,68 +129,36 @@ function RecipeFormFields({
         </div>
       )}
 
-      <div className="form-group">
-        <label>Ingredients</label>
-        {formData.ingredients.map((ingredient, index) => (
-          <div key={index} style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
-            <input
-              type="text"
-              value={ingredient}
-              onChange={(e) => onArrayChange(index, 'ingredients', e.target.value)}
-              placeholder="e.g., 2 cups flour"
-              style={{ flex: 1 }}
-            />
-            {formData.ingredients.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-danger btn-small"
-                onClick={() => onRemoveArrayItem(index, 'ingredients')}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => onAddArrayItem('ingredients')}
-          style={{ marginTop: '8px' }}
-        >
-          + Add Ingredient
-        </button>
-      </div>
+      <ListFieldEditor
+        label="Ingredients"
+        name="ingredients"
+        items={formData.ingredients}
+        parse={parseIngredients}
+        placeholder="e.g., 2 cups flour"
+        pastePlaceholder={'2 cups all-purpose flour\n1 tsp kosher salt\n3 tablespoons butter, melted'}
+        pasteHint="One ingredient per line. If it all arrives on one line, quantities and measures are used to split it."
+        addLabel="+ Add Ingredient"
+        onArrayChange={onArrayChange}
+        onAddArrayItem={onAddArrayItem}
+        onRemoveArrayItem={onRemoveArrayItem}
+        onSetArray={onSetArray}
+      />
 
-      <div className="form-group">
-        <label>Instructions</label>
-        {formData.instructions.map((instruction, index) => (
-          <div key={index} style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
-            <textarea
-              value={instruction}
-              onChange={(e) => onArrayChange(index, 'instructions', e.target.value)}
-              placeholder="Step by step instructions"
-              style={{ flex: 1, minHeight: '60px' }}
-            />
-            {formData.instructions.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-danger btn-small"
-                onClick={() => onRemoveArrayItem(index, 'instructions')}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => onAddArrayItem('instructions')}
-          style={{ marginTop: '8px' }}
-        >
-          + Add Step
-        </button>
-      </div>
+      <ListFieldEditor
+        label="Instructions"
+        name="instructions"
+        items={formData.instructions}
+        parse={parseInstructions}
+        placeholder="Step by step instructions"
+        pastePlaceholder={'1. Preheat the oven to 400 degrees.\n2. Mix the dry ingredients.\n3. Bake for 25 minutes.'}
+        pasteHint="One step per line. A single run-together block is split on numbered or bulleted list markers."
+        addLabel="+ Add Step"
+        multiline
+        onArrayChange={onArrayChange}
+        onAddArrayItem={onAddArrayItem}
+        onRemoveArrayItem={onRemoveArrayItem}
+        onSetArray={onSetArray}
+      />
 
       <div className="form-group">
         <label>Photo</label>
@@ -237,23 +199,11 @@ function RecipeFormFields({
         <StarRating rating={formData.rating} onChange={onRatingChange} />
       </div>
 
-      <div className="form-group">
-        <label>Nutrition (optional)</label>
-        {NUTRITION_FIELDS.reduce((rows, field, i) => {
-          if (i % 2 === 0) rows.push([field]);
-          else rows[rows.length - 1].push(field);
-          return rows;
-        }, []).map((pair, i) => (
-          <div className="form-row" key={i}>
-            {pair.map(([key, label]) => (
-              <div className="form-group" key={key}>
-                <label>{label}</label>
-                <input type="text" name={key} value={formData[key]} onChange={onFieldChange} />
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      <NutritionFieldEditor
+        formData={formData}
+        onFieldChange={onFieldChange}
+        onApplyNutrition={onApplyNutrition}
+      />
 
       <div className="form-group">
         <label>Notes</label>

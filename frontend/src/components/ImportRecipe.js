@@ -21,6 +21,8 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
+    handleSetArray,
+    handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
   } = useRecipeFormState();
@@ -112,6 +114,8 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
           onArrayChange={handleArrayChange}
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
+          onSetArray={handleSetArray}
+          onApplyNutrition={handleApplyNutrition}
           onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}
           showSourceFile

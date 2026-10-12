@@ -13,6 +13,8 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
+    handleSetArray,
+    handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
   } = useRecipeFormState({
@@ -52,6 +54,8 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
           onArrayChange={handleArrayChange}
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
+          onSetArray={handleSetArray}
+          onApplyNutrition={handleApplyNutrition}
           onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}
           existingPhoto={recipe.image_path ? { path: recipe.image_path, title: recipe.title } : null}

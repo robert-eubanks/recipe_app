@@ -63,11 +63,28 @@ export function useRecipeFormState(initialRecipe) {
     setFormData((prev) => ({ ...prev, [arrayName]: [...prev[arrayName], ''] }));
   };
 
+  // Keeps one blank entry so the individual-entry tab is never empty.
+  const handleSetArray = (arrayName, items) => {
+    setFormData((prev) => ({ ...prev, [arrayName]: items.length ? items : [''] }));
+  };
+
   const handleRemoveArrayItem = (index, arrayName) => {
     setFormData((prev) => ({
       ...prev,
       [arrayName]: prev[arrayName].filter((_, i) => i !== index),
     }));
+  };
+
+  // Merges parsed nutrition values (keyed by short name, e.g. "calories")
+  // into the matching nutrition_* fields, leaving unmatched fields untouched.
+  const handleApplyNutrition = (parsed) => {
+    setFormData((prev) => {
+      const next = { ...prev };
+      for (const [shortKey, value] of Object.entries(parsed)) {
+        next[`nutrition_${shortKey}`] = value;
+      }
+      return next;
+    });
   };
 
   const handleRatingChange = (n) => {
@@ -87,6 +104,8 @@ export function useRecipeFormState(initialRecipe) {
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
+    handleSetArray,
+    handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
   };
