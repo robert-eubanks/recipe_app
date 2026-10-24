@@ -96,6 +96,15 @@ class Database {
           FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
       `);
+
+      // Optional sub-recipe grouping (e.g. "Cake" vs "Icing"), null = ungrouped
+      for (const table of ['ingredients', 'instructions']) {
+        this.db.run(`ALTER TABLE ${table} ADD COLUMN section TEXT`, (err) => {
+          if (err && !/duplicate column name/.test(err.message)) {
+            console.error(`Error adding section column to ${table}:`, err);
+          }
+        });
+      }
     });
   }
 

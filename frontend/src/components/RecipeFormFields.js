@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import StarRating from './StarRating';
 import ListFieldEditor from './ListFieldEditor';
 import NutritionFieldEditor from './NutritionFieldEditor';
@@ -12,6 +12,11 @@ function RecipeFormFields({
   onAddArrayItem,
   onRemoveArrayItem,
   onSetArray,
+  hasSections,
+  onToggleSections,
+  onAddSection,
+  onRenameSection,
+  onRemoveSection,
   onApplyNutrition,
   onRatingChange,
   onPhotoFileChange,
@@ -20,6 +25,61 @@ function RecipeFormFields({
   removePhoto,
   onRemovePhotoChange,
 }) {
+  const [selectedSection, setSelectedSection] = useState(null);
+
+  // The list of section names, in the order they first appear (ingredients
+  // first, then any section only present in instructions) — one shared list
+  // drives both editors below, since a section spans both.
+  const sectionLabels = useMemo(() => {
+    const labels = [];
+    const seen = new Set();
+    for (const item of [...formData.ingredients, ...formData.instructions]) {
+      if (item.section && !seen.has(item.section)) {
+        seen.add(item.section);
+        labels.push(item.section);
+      }
+    }
+    return labels;
+  }, [formData.ingredients, formData.instructions]);
+
+  // Keeps the selection valid: defaults to the first section once sections
+  // turn on, and re-picks one if the selected section was renamed away or removed.
+  useEffect(() => {
+    if (!hasSections) return;
+    if (!sectionLabels.length) {
+      if (selectedSection !== null) setSelectedSection(null);
+      return;
+    }
+    if (!selectedSection || !sectionLabels.includes(selectedSection)) {
+      setSelectedSection(sectionLabels[0]);
+    }
+  }, [hasSections, sectionLabels, selectedSection]);
+
+  const handleAddSectionClick = () => {
+    setSelectedSection(onAddSection());
+  };
+
+  // Keeps the selection pointed at the section being renamed. Without this,
+  // selectedSection would still hold the old label after the rename commits,
+  // the clamping effect above would find it missing from sectionLabels, and
+  // selection would jump to the first section — losing focus mid-keystroke.
+  const handleSectionNameChange = (e) => {
+    const newLabel = e.target.value;
+    onRenameSection(selectedSection, newLabel);
+    // Mirrors handleRenameSection's own guard: a blank name is rejected and
+    // the underlying data keeps its old label, so the selection must too.
+    if (newLabel.trim()) setSelectedSection(newLabel);
+  };
+
+  const handleRemoveSectionClick = () => {
+    if (!selectedSection) return;
+    if (window.confirm(`Remove the "${selectedSection}" section and its ingredients/instructions?`)) {
+      onRemoveSection(selectedSection);
+    }
+  };
+
+  const showSectionContent = !hasSections || selectedSection;
+
   return (
     <>
       <div className="form-group">
@@ -129,36 +189,112 @@ function RecipeFormFields({
         </div>
       )}
 
-      <ListFieldEditor
-        label="Ingredients"
-        name="ingredients"
-        items={formData.ingredients}
-        parse={parseIngredients}
-        placeholder="e.g., 2 cups flour"
-        pastePlaceholder={'2 cups all-purpose flour\n1 tsp kosher salt\n3 tablespoons butter, melted'}
-        pasteHint="One ingredient per line. If it all arrives on one line, quantities and measures are used to split it."
-        addLabel="+ Add Ingredient"
-        onArrayChange={onArrayChange}
-        onAddArrayItem={onAddArrayItem}
-        onRemoveArrayItem={onRemoveArrayItem}
-        onSetArray={onSetArray}
-      />
+      <div className="form-group">
+        <label style={{ fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <input
+            type="checkbox"
+            checked={hasSections}
+            onChange={(e) => onToggleSections(e.target.checked)}
+            style={{ width: 'auto' }}
+          />
+          This recipe has multiple sub-recipes (e.g. a cake and its icing)
+        </label>
+      </div>
 
-      <ListFieldEditor
-        label="Instructions"
-        name="instructions"
-        items={formData.instructions}
-        parse={parseInstructions}
-        placeholder="Step by step instructions"
-        pastePlaceholder={'1. Preheat the oven to 400 degrees.\n2. Mix the dry ingredients.\n3. Bake for 25 minutes.'}
-        pasteHint="One step per line. A single run-together block is split on numbered or bulleted list markers."
-        addLabel="+ Add Step"
-        multiline
-        onArrayChange={onArrayChange}
-        onAddArrayItem={onAddArrayItem}
-        onRemoveArrayItem={onRemoveArrayItem}
-        onSetArray={onSetArray}
-      />
+      {hasSections && (
+        <div className="form-group">
+          <label>Sections</label>
+          <div className="section-list">
+            {sectionLabels.length ? (
+              sectionLabels.map((lbl) => (
+                <button
+                  key={lbl}
+                  type="button"
+                  className={`section-list-item ${lbl === selectedSection ? 'active' : ''}`}
+                  onClick={() => setSelectedSection(lbl)}
+                >
+                  {lbl}
+                </button>
+              ))
+            ) : (
+              <p className="section-list-empty">No sections yet — add one to get started.</p>
+            )}
+          </div>
+          <div className="section-list-actions">
+            <button type="button" className="btn btn-secondary" onClick={handleAddSectionClick}>
+              Add Section
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={!selectedSection}
+              onClick={handleRemoveSectionClick}
+            >
+              Remove Section
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hasSections && selectedSection && <hr className="section-divider" />}
+
+      {hasSections && selectedSection && (
+        <div className="form-group">
+          <label className="list-section-label">Section Name</label>
+          <input
+            type="text"
+            value={selectedSection}
+            onChange={handleSectionNameChange}
+          />
+        </div>
+      )}
+
+      {showSectionContent && (
+        <>
+          <ListFieldEditor
+            label="Ingredients"
+            name="ingredients"
+            items={formData.ingredients}
+            parse={parseIngredients}
+            placeholder="e.g., 2 cups flour"
+            pastePlaceholder={'2 cups all-purpose flour\n1 tsp kosher salt\n3 tablespoons butter, melted'}
+            pasteHint={
+              hasSections
+                ? 'One ingredient per line. If it all arrives on one line, quantities and measures are used to split it.'
+                : 'One ingredient per line. If it all arrives on one line, quantities and measures are used to split it. A line like "For the Icing" or "Icing:" starts a new sub-recipe.'
+            }
+            addLabel="+ Add Ingredient"
+            hasSections={hasSections}
+            section={selectedSection}
+            onArrayChange={onArrayChange}
+            onAddArrayItem={onAddArrayItem}
+            onRemoveArrayItem={onRemoveArrayItem}
+            onSetArray={onSetArray}
+          />
+
+          <ListFieldEditor
+            label="Instructions"
+            name="instructions"
+            items={formData.instructions}
+            parse={parseInstructions}
+            placeholder="Step by step instructions"
+            pastePlaceholder={'1. Preheat the oven to 400 degrees.\n2. Mix the dry ingredients.\n3. Bake for 25 minutes.'}
+            pasteHint={
+              hasSections
+                ? 'One step per line. A single run-together block is split on numbered or bulleted list markers.'
+                : 'One step per line. A single run-together block is split on numbered or bulleted list markers. A line like "For the Icing" or "Icing:" starts a new sub-recipe.'
+            }
+            addLabel="+ Add Step"
+            multiline
+            hasSections={hasSections}
+            section={selectedSection}
+            onArrayChange={onArrayChange}
+            onAddArrayItem={onAddArrayItem}
+            onRemoveArrayItem={onRemoveArrayItem}
+            onSetArray={onSetArray}
+          />
+        </>
+      )}
 
       <div className="form-group">
         <label>Photo</label>

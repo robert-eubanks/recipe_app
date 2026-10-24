@@ -16,18 +16,25 @@ function App() {
   const [searchResults, setSearchResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [featuredRecipe, setFeaturedRecipe] = useState(null);
 
   // Fetch all recipes on mount
   useEffect(() => {
-    loadRecipes();
+    loadRecipes({ pickFeatured: true });
     loadCategories();
   }, []);
 
-  const loadRecipes = async () => {
+  // The welcome-pane "featured" recipe is only (re-)randomized on first load
+  // — every other call just refreshes the list, so it doesn't jump around
+  // (e.g. right after saving an edit, while the welcome pane isn't even showing).
+  const loadRecipes = async ({ pickFeatured = false } = {}) => {
     try {
       setLoading(true);
       const response = await axios.get('/api/recipes');
       setRecipes(response.data);
+      if (pickFeatured && response.data.length) {
+        setFeaturedRecipe(response.data[Math.floor(Math.random() * response.data.length)]);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to load recipes');
@@ -129,7 +136,10 @@ function App() {
       if (photoFile) {
         await uploadPhoto(selectedRecipe.id, photoFile, recipeData.image_credit);
       }
-      setSelectedRecipe(null);
+      // Stay on this recipe after saving, with its freshly-saved data — PUT
+      // itself doesn't return the updated recipe, so re-fetch it.
+      const refreshed = await axios.get(`/api/recipes/${selectedRecipe.id}`);
+      setSelectedRecipe(refreshed.data);
       loadRecipes();
       setError(null);
     } catch (err) {
@@ -214,6 +224,7 @@ function App() {
             />
           ) : selectedRecipe ? (
             <RecipeDetail
+              key={selectedRecipe.id}
               recipe={selectedRecipe}
               categories={categories}
               onUpdate={handleUpdateRecipe}
@@ -223,6 +234,23 @@ function App() {
             <div className="welcome">
               <h2>Welcome to your Recipe Database</h2>
               <p>Select a recipe from the list or add a new one to get started.</p>
+
+              {featuredRecipe && (
+                <div className="featured-recipe">
+                  <div className="featured-recipe-label">Feeling undecided? Try this</div>
+                  <div className="featured-recipe-title">{featuredRecipe.title}</div>
+                  {featuredRecipe.category_name && (
+                    <div className="featured-recipe-category">{featuredRecipe.category_name}</div>
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: 'auto' }}
+                    onClick={() => handleSelectRecipe(featuredRecipe)}
+                  >
+                    View Recipe
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </main>

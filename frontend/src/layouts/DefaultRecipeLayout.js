@@ -2,6 +2,21 @@ import React from 'react';
 import StarRating from '../components/StarRating';
 import './DefaultRecipeLayout.css';
 
+// Groups a flat [{id, text, section}] array into consecutive runs sharing
+// the same section label, mirroring how the editor groups the same data.
+function groupBySections(items) {
+  const groups = [];
+  for (const item of items) {
+    const last = groups[groups.length - 1];
+    if (last && last.section === item.section) {
+      last.items.push(item);
+    } else {
+      groups.push({ section: item.section, items: [item] });
+    }
+  }
+  return groups;
+}
+
 const NUTRITION_FIELDS = [
   { key: 'nutrition_calories', label: 'Calories' },
   { key: 'nutrition_protein', label: 'Protein' },
@@ -74,21 +89,29 @@ function DefaultRecipeLayout({ recipe }) {
         <div className="recipe-display-column">
           <h2 className="recipe-display-section-header">Ingredients</h2>
           {recipe.servings && <p className="recipe-display-yield">Yield: {recipe.servings}</p>}
-          {recipe.ingredients.length > 0 && (
-            <ul className="recipe-display-ingredients">
-              {recipe.ingredients.map((ingredient) => (
-                <li key={ingredient.id}>{ingredient.text}</li>
-              ))}
-            </ul>
-          )}
+          {groupBySections(recipe.ingredients).map((group, groupIndex) => (
+            <div key={groupIndex}>
+              {group.section && <h3 className="recipe-display-subsection-header">{group.section}</h3>}
+              <ul className="recipe-display-ingredients">
+                {group.items.map((ingredient) => (
+                  <li key={ingredient.id}>{ingredient.text}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         <div className="recipe-display-column">
           <h2 className="recipe-display-section-header">Preparation</h2>
-          {recipe.instructions.map((instruction, index) => (
-            <div key={instruction.id} className="recipe-display-step">
-              <p className="recipe-display-step-label">Step {index + 1}</p>
-              <p className="recipe-display-step-text">{instruction.text}</p>
+          {groupBySections(recipe.instructions).map((group, groupIndex) => (
+            <div key={groupIndex}>
+              {group.section && <h3 className="recipe-display-subsection-header">{group.section}</h3>}
+              {group.items.map((instruction, index) => (
+                <div key={instruction.id} className="recipe-display-step">
+                  <p className="recipe-display-step-label">Step {index + 1}</p>
+                  <p className="recipe-display-step-text">{instruction.text}</p>
+                </div>
+              ))}
             </div>
           ))}
         </div>

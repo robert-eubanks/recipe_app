@@ -10,6 +10,8 @@ function ListFieldEditor({
   pasteHint,
   addLabel,
   multiline = false,
+  hasSections,
+  section,
   onArrayChange,
   onAddArrayItem,
   onRemoveArrayItem,
@@ -19,17 +21,44 @@ function ListFieldEditor({
   const [pasteText, setPasteText] = useState('');
 
   const parsed = useMemo(() => parse(pasteText), [pasteText, parse]);
-  const hasContent = items.some((item) => item.trim());
+
+  // When sections are on, only the currently selected section's items (and
+  // their original indices into the full array) are shown/edited here —
+  // every other section's items live in `items` untouched, off-screen.
+  const visibleEntries = useMemo(() => {
+    const withIndex = items.map((item, index) => ({ item, index }));
+    return hasSections ? withIndex.filter(({ item }) => item.section === section) : withIndex;
+  }, [items, hasSections, section]);
+
+  const hasContent = visibleEntries.some(({ item }) => item.text.trim());
+
+  // Splices a full replacement for this section's contiguous run back into
+  // the full array, leaving every other section's items in place. Any
+  // section label a paste happened to detect is overridden to the section
+  // already selected — sections are managed explicitly via the section list,
+  // not re-derived from pasted text once they're turned on.
+  const replaceVisible = (nextItems) => {
+    if (!hasSections) return nextItems;
+    const tagged = nextItems.map((item) => ({ ...item, section }));
+    const runIndices = [];
+    items.forEach((item, i) => {
+      if (item.section === section) runIndices.push(i);
+    });
+    if (!runIndices.length) return [...items, ...tagged];
+    const first = runIndices[0];
+    const last = runIndices[runIndices.length - 1];
+    return [...items.slice(0, first), ...tagged, ...items.slice(last + 1)];
+  };
 
   const apply = (nextItems) => {
-    onSetArray(name, nextItems);
+    onSetArray(name, replaceVisible(nextItems));
     setPasteText('');
     setMode('individual');
   };
 
-  const renderItemInput = (value, index) => {
+  const renderItemInput = (item, index) => {
     const shared = {
-      value,
+      value: item.text,
       onChange: (e) => onArrayChange(index, name, e.target.value),
       placeholder,
     };
@@ -37,6 +66,35 @@ function ListFieldEditor({
       ? <textarea {...shared} style={{ flex: 1, minHeight: '60px' }} />
       : <input type="text" {...shared} style={{ flex: 1 }} />;
   };
+
+  const renderItemRow = ({ item, index }) => (
+    <div key={index} style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
+      {renderItemInput(item, index)}
+      {visibleEntries.length > 1 && (
+        <button
+          type="button"
+          className="btn btn-danger btn-small"
+          onClick={() => onRemoveArrayItem(index, name)}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+
+  const renderItems = () => (
+    <>
+      {visibleEntries.map(renderItemRow)}
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={() => onAddArrayItem(name, hasSections ? section : null)}
+        style={{ marginTop: '8px' }}
+      >
+        {addLabel}
+      </button>
+    </>
+  );
 
   return (
     <div className="form-group">
@@ -59,32 +117,9 @@ function ListFieldEditor({
         </button>
       </div>
 
-      {mode === 'individual' ? (
-        <>
-          {items.map((item, index) => (
-            <div key={index} style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
-              {renderItemInput(item, index)}
-              {items.length > 1 && (
-                <button
-                  type="button"
-                  className="btn btn-danger btn-small"
-                  onClick={() => onRemoveArrayItem(index, name)}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => onAddArrayItem(name)}
-            style={{ marginTop: '8px' }}
-          >
-            {addLabel}
-          </button>
-        </>
-      ) : (
+      {mode === 'individual' && renderItems()}
+
+      {mode === 'paste' && (
         <>
           <textarea
             value={pasteText}
@@ -95,12 +130,12 @@ function ListFieldEditor({
           <p className="paste-hint">{pasteHint}</p>
 
           {parsed.length > 0 && (
-            <div className="paste-preview">
+            <div className="paste-preview-wrapper">
               <div className="paste-preview-count">
                 Found {parsed.length} {parsed.length === 1 ? 'item' : 'items'}:
               </div>
               <ol>
-                {parsed.map((item, index) => <li key={index}>{item}</li>)}
+                {parsed.map((item, i) => <li key={i}>{item.text}</li>)}
               </ol>
             </div>
           )}
@@ -111,7 +146,7 @@ function ListFieldEditor({
                 type="button"
                 className="btn btn-primary"
                 disabled={!parsed.length}
-                onClick={() => apply([...items.filter((item) => item.trim()), ...parsed])}
+                onClick={() => apply([...visibleEntries.map(({ item }) => item).filter((item) => item.text.trim()), ...parsed])}
               >
                 Append {parsed.length || ''}
               </button>

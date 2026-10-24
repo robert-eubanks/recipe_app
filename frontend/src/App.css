@@ -70,6 +70,38 @@
   font-size: 16px;
 }
 
+.featured-recipe {
+  display: inline-block;
+  margin: 32px auto 0;
+  padding: 20px 24px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.featured-recipe-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9c4a3c;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.featured-recipe-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.featured-recipe-category {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 16px;
+}
+
 /* Buttons */
 .btn {
   padding: 10px 16px;
@@ -208,7 +240,7 @@
   line-height: 1.4;
 }
 
-.paste-preview {
+.paste-preview-wrapper {
   margin-top: 12px;
   padding: 12px;
   background-color: #fafafa;
@@ -223,16 +255,79 @@
   font-weight: 500;
 }
 
-.paste-preview ol,
-.paste-preview ul {
+.paste-preview-wrapper ol,
+.paste-preview-wrapper ul {
   margin: 0;
   padding-left: 20px;
 }
 
-.paste-preview li {
+.paste-preview-wrapper li {
   padding: 2px 0;
   color: #333;
   line-height: 1.4;
+}
+
+.list-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9c4a3c;
+  margin-bottom: 4px;
+}
+
+/* Section picker (shared between Ingredients and Instructions) */
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.section-list-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.section-list-item:hover {
+  background-color: #f5f5f5;
+  border-color: #ddd;
+}
+
+.section-list-item.active {
+  background-color: #f7f0ee;
+  border-color: #eee;
+  border-left: 3px solid #9c4a3c;
+  font-weight: 600;
+}
+
+.section-list-empty {
+  font-size: 13px;
+  color: #999;
+  margin: 4px 0;
+}
+
+.section-list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.section-list-actions .btn {
+  width: auto;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 20px 0;
 }
 
 .paste-actions {

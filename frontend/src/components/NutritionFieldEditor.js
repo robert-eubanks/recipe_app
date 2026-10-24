@@ -66,7 +66,7 @@ function NutritionFieldEditor({ formData, onFieldChange, onApplyNutrition }) {
           </p>
 
           {parsedCount > 0 && (
-            <div className="paste-preview">
+            <div className="paste-preview-wrapper">
               <div className="paste-preview-count">Found {parsedCount} of 8 values:</div>
               <ul>
                 {NUTRITION_FIELDS.filter((field) => parsed[field.shortKey]).map((field) => (

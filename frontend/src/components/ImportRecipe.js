@@ -17,11 +17,16 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
   const {
     formData,
     setFormData,
+    hasSections,
     handleInputChange,
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
     handleSetArray,
+    handleAddSection,
+    handleRenameSection,
+    handleRemoveSection,
+    handleToggleSections,
     handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
@@ -115,6 +120,11 @@ function ImportRecipe({ categories, onSubmit, onCancel, onStartManualEntry }) {
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
           onSetArray={handleSetArray}
+          hasSections={hasSections}
+          onToggleSections={handleToggleSections}
+          onAddSection={handleAddSection}
+          onRenameSection={handleRenameSection}
+          onRemoveSection={handleRemoveSection}
           onApplyNutrition={handleApplyNutrition}
           onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}

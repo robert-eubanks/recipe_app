@@ -64,6 +64,18 @@ function validateRating(rating) {
   return { value: r, error: null };
 }
 
+// Shared by the ingredients/instructions insert loops in both create and
+// update: each item is {text, section}, section optional (null = ungrouped).
+async function insertRecipeItems(table, recipeId, items) {
+  for (let i = 0; i < items.length; i++) {
+    const { text, section } = items[i];
+    await db.run(
+      `INSERT INTO ${table} (recipe_id, text, section, order_num) VALUES (?, ?, ?, ?)`,
+      [recipeId, text, section || null, i]
+    );
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
@@ -90,11 +102,11 @@ app.get('/api/recipes', async (req, res) => {
     // Get ingredients and instructions for each recipe
     for (let recipe of recipes) {
       recipe.ingredients = await db.all(
-        'SELECT id, text FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
+        'SELECT id, text, section FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
         [recipe.id]
       );
       recipe.instructions = await db.all(
-        'SELECT id, text FROM instructions WHERE recipe_id = ? ORDER BY order_num',
+        'SELECT id, text, section FROM instructions WHERE recipe_id = ? ORDER BY order_num',
         [recipe.id]
       );
     }
@@ -118,11 +130,11 @@ app.get('/api/recipes/:id', async (req, res) => {
     }
 
     recipe.ingredients = await db.all(
-      'SELECT id, text FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
+      'SELECT id, text, section FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
       [recipe.id]
     );
     recipe.instructions = await db.all(
-      'SELECT id, text FROM instructions WHERE recipe_id = ? ORDER BY order_num',
+      'SELECT id, text, section FROM instructions WHERE recipe_id = ? ORDER BY order_num',
       [recipe.id]
     );
 
@@ -165,22 +177,12 @@ app.post('/api/recipes', async (req, res) => {
 
     // Add ingredients
     if (ingredients && Array.isArray(ingredients)) {
-      for (let i = 0; i < ingredients.length; i++) {
-        await db.run(
-          'INSERT INTO ingredients (recipe_id, text, order_num) VALUES (?, ?, ?)',
-          [recipeId, ingredients[i], i]
-        );
-      }
+      await insertRecipeItems('ingredients', recipeId, ingredients);
     }
 
     // Add instructions
     if (instructions && Array.isArray(instructions)) {
-      for (let i = 0; i < instructions.length; i++) {
-        await db.run(
-          'INSERT INTO instructions (recipe_id, text, order_num) VALUES (?, ?, ?)',
-          [recipeId, instructions[i], i]
-        );
-      }
+      await insertRecipeItems('instructions', recipeId, instructions);
     }
 
     res.status(201).json({ id: recipeId, message: 'Recipe created' });
@@ -230,23 +232,13 @@ app.put('/api/recipes/:id', async (req, res) => {
     // Update ingredients
     if (ingredients && Array.isArray(ingredients)) {
       await db.run('DELETE FROM ingredients WHERE recipe_id = ?', [req.params.id]);
-      for (let i = 0; i < ingredients.length; i++) {
-        await db.run(
-          'INSERT INTO ingredients (recipe_id, text, order_num) VALUES (?, ?, ?)',
-          [req.params.id, ingredients[i], i]
-        );
-      }
+      await insertRecipeItems('ingredients', req.params.id, ingredients);
     }
 
     // Update instructions
     if (instructions && Array.isArray(instructions)) {
       await db.run('DELETE FROM instructions WHERE recipe_id = ?', [req.params.id]);
-      for (let i = 0; i < instructions.length; i++) {
-        await db.run(
-          'INSERT INTO instructions (recipe_id, text, order_num) VALUES (?, ?, ?)',
-          [req.params.id, instructions[i], i]
-        );
-      }
+      await insertRecipeItems('instructions', req.params.id, instructions);
     }
 
     res.json({ message: 'Recipe updated' });
@@ -421,11 +413,11 @@ app.get('/api/search', async (req, res) => {
     // Get ingredients and instructions
     for (let recipe of results) {
       recipe.ingredients = await db.all(
-        'SELECT id, text FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
+        'SELECT id, text, section FROM ingredients WHERE recipe_id = ? ORDER BY order_num',
         [recipe.id]
       );
       recipe.instructions = await db.all(
-        'SELECT id, text FROM instructions WHERE recipe_id = ? ORDER BY order_num',
+        'SELECT id, text, section FROM instructions WHERE recipe_id = ? ORDER BY order_num',
         [recipe.id]
       );
     }

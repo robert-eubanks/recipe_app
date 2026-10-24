@@ -53,7 +53,7 @@ test('paste tab previews parsed nutrients and applies only the matched fields', 
   typeInto(container.querySelector('textarea'), 'Calories: 320\nProtein: 12g\nFat: 8g');
 
   expect(container.querySelector('.paste-preview-count').textContent).toBe('Found 3 of 8 values:');
-  expect(Array.from(container.querySelectorAll('.paste-preview li')).map((li) => li.textContent))
+  expect(Array.from(container.querySelectorAll('.paste-preview-wrapper li')).map((li) => li.textContent))
     .toEqual(['Calories: 320', 'Protein: 12g', 'Fat: 8g']);
 
   click(byText('Apply 3 values'));

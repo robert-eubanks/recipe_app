@@ -6,11 +6,16 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
   const [photoFile, setPhotoFile] = useState(null);
   const {
     formData,
+    hasSections,
     handleInputChange,
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
     handleSetArray,
+    handleAddSection,
+    handleRenameSection,
+    handleRemoveSection,
+    handleToggleSections,
     handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
@@ -45,6 +50,11 @@ function RecipeForm({ categories, onSubmit, onCancel }) {
         onAddArrayItem={handleAddArrayItem}
         onRemoveArrayItem={handleRemoveArrayItem}
         onSetArray={handleSetArray}
+        hasSections={hasSections}
+        onToggleSections={handleToggleSections}
+        onAddSection={handleAddSection}
+        onRenameSection={handleRenameSection}
+        onRemoveSection={handleRemoveSection}
         onApplyNutrition={handleApplyNutrition}
         onRatingChange={handleRatingChange}
         onPhotoFileChange={setPhotoFile}

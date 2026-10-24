@@ -9,19 +9,20 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
   const [removePhoto, setRemovePhoto] = useState(false);
   const {
     formData,
+    hasSections,
     handleInputChange,
     handleArrayChange,
     handleAddArrayItem,
     handleRemoveArrayItem,
     handleSetArray,
+    handleAddSection,
+    handleRenameSection,
+    handleRemoveSection,
+    handleToggleSections,
     handleApplyNutrition,
     handleRatingChange,
     cleanFormData,
-  } = useRecipeFormState({
-    ...recipe,
-    ingredients: recipe.ingredients.map(i => i.text),
-    instructions: recipe.instructions.map(i => i.text),
-  });
+  } = useRecipeFormState(recipe);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,6 +56,11 @@ function RecipeDetail({ recipe, categories, onUpdate, onDelete }) {
           onAddArrayItem={handleAddArrayItem}
           onRemoveArrayItem={handleRemoveArrayItem}
           onSetArray={handleSetArray}
+          hasSections={hasSections}
+          onToggleSections={handleToggleSections}
+          onAddSection={handleAddSection}
+          onRenameSection={handleRenameSection}
+          onRemoveSection={handleRemoveSection}
           onApplyNutrition={handleApplyNutrition}
           onRatingChange={handleRatingChange}
           onPhotoFileChange={setPhotoFile}
